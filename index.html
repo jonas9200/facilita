@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FacilitAgro — MQTT Publisher</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a2e0f;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;padding:2rem 1rem 3rem;}
+header{text-align:center;margin-bottom:1.6rem;}
+.logo{display:inline-flex;align-items:center;justify-content:center;
+  width:52px;height:52px;background:#639922;border-radius:14px;margin-bottom:.6rem;}
+.logo svg{width:28px;height:28px;fill:#fff;}
+h1{font-size:1.4rem;font-weight:700;color:#C0DD97;letter-spacing:-.02em;}
+.subtitle{font-size:.75rem;color:#97C459;margin-top:.2rem;opacity:.7;}
+.card{background:#fff;border-radius:16px;padding:1.6rem;width:100%;max-width:620px;
+  box-shadow:0 8px 40px rgba(0,0,0,.35);}
+.status{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;
+  font-size:.78rem;font-weight:600;margin-bottom:1.3rem;
+  background:#F1EFE8;color:#5F5E5A;border:1px solid #D3D1C7;transition:all .3s;}
+.status.connected{background:#E1F5EE;color:#085041;border-color:#9FE1CB;}
+.status.error{background:#FCEBEB;color:#791F1F;border-color:#F7C1C1;}
+.status.connecting{background:#FAEEDA;color:#633806;border-color:#FAC775;}
+.dot{width:8px;height:8px;border-radius:50%;background:#B4B2A9;flex-shrink:0;transition:background .3s;}
+.status.connected .dot{background:#1D9E75;}
+.status.error .dot{background:#E24B4A;}
+.status.connecting .dot{background:#EF9F27;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.tabs{display:flex;gap:3px;margin-bottom:1.3rem;background:#F1EFE8;border-radius:9px;padding:4px;}
+.tab{flex:1;padding:7px 4px;border:none;border-radius:7px;background:none;
+  font-size:.76rem;font-weight:600;color:#888780;cursor:pointer;transition:all .2s;}
+.tab.active{background:#fff;color:#3B6D11;box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.panel{display:none;} .panel.active{display:block;}
+.field{margin-bottom:.85rem;}
+label{display:block;font-size:.67rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.07em;color:#5F5E5A;margin-bottom:4px;}
+input,textarea,select{width:100%;border:1.5px solid #D3D1C7;border-radius:7px;
+  padding:8px 11px;font-size:.87rem;font-family:inherit;color:#2C2C2A;
+  background:#F1EFE8;outline:none;transition:border-color .2s,background .2s;}
+input:focus,textarea:focus,select:focus{border-color:#639922;background:#fff;}
+input[readonly]{color:#888780;cursor:default;}
+input[readonly]:focus{border-color:#D3D1C7;background:#F1EFE8;}
+textarea{min-height:82px;resize:vertical;}
+.hint{font-size:.67rem;color:#B4B2A9;margin-top:3px;}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.sec{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+  color:#3B6D11;margin:1.1rem 0 .65rem;padding-bottom:3px;border-bottom:1.5px solid #EAF3DE;}
+.preview-label{font-size:.67rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.07em;color:#5F5E5A;margin-bottom:4px;}
+#json-preview{background:#2C2C2A;border-radius:8px;padding:10px 12px;
+  font-family:'Courier New',monospace;font-size:.7rem;color:#C0DD97;
+  max-height:130px;overflow-y:auto;line-height:1.55;white-space:pre;margin-bottom:.85rem;}
+.btn{width:100%;padding:11px;border-radius:9px;border:none;background:#3B6D11;
+  color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;transition:background .15s,transform .1s;}
+.btn:hover{background:#639922;} .btn:active{transform:scale(.98);}
+.btn:disabled{background:#B4B2A9;cursor:not-allowed;}
+.btn.outline{background:#fff;color:#3B6D11;border:1.5px solid #3B6D11;margin-top:.5rem;}
+.btn.outline:hover{background:#EAF3DE;}
+hr{border:none;border-top:1px solid #D3D1C7;margin:1.2rem 0;}
+.log-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.log-hdr span{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5F5E5A;}
+.log-hdr button{background:none;border:none;font-size:.68rem;color:#B4B2A9;cursor:pointer;}
+.log-hdr button:hover{color:#5F5E5A;}
+#log{background:#2C2C2A;border-radius:8px;padding:10px 12px;font-family:'Courier New',monospace;
+  font-size:.72rem;color:#C0DD97;max-height:155px;overflow-y:auto;line-height:1.6;}
+.ll{margin-bottom:1px;}
+.ll.ok{color:#9FE1CB;} .ll.err{color:#F09595;} .ll.info{color:#FAC775;}
+.ts{color:#888780;margin-right:5px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 32 32"><path d="M4 26 Q4 6 16 2 Q28 6 28 26 L23 21 Q21 11 16 7 Q11 11 9 21Z"/></svg>
+  </div>
+  <h1>FacilitAgro MQTT</h1>
+  <p class="subtitle">mqtt.facilitagro.com.br:8883 via proxy WebSocket</p>
+</header>
+
+<div class="card">
+
+  <div class="status connecting" id="statusBar">
+    <div class="dot"></div>
+    <span id="statusText">Conectando ao proxy...</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('estacao',this)">📡 Estação</button>
+    <button class="tab" onclick="switchTab('livre',this)">✏️ Livre</button>
+    <button class="tab" onclick="switchTab('cfg',this)">⚙️ Configurações</button>
+  </div>
+
+  <!-- ====== ESTAÇÃO ====== -->
+  <div class="panel active" id="panel-estacao">
+    <div class="r2">
+      <div class="field">
+        <label>ID do Equipamento (cfg_id)</label>
+        <input id="e-id" value="Estacao_0001" oninput="onIdChange()"/>
+        <p class="hint">ex: Estacao_0001</p>
+      </div>
+      <div class="field">
+        <label>Tópico (gerado automaticamente)</label>
+        <input id="e-topic" readonly/>
+      </div>
+    </div>
+    <div class="field">
+      <label>Data/Hora do Registro</label>
+      <input id="e-registro" placeholder="2025-01-15 08:30:00.123"/>
+      <p class="hint">Formato: AAAA-MM-DD HH:MM:SS.mmm — deixe vazio para usar o horário atual</p>
+    </div>
+
+    <p class="sec">🌡️ DHT22 — Temperatura &amp; Umidade</p>
+    <div class="r2">
+      <div class="field"><label>Temperatura (°C)</label>
+        <input id="e-temp" type="number" step="0.01" placeholder="25.30"/></div>
+      <div class="field"><label>Umidade (%)</label>
+        <input id="e-umid" type="number" step="0.01" placeholder="68.50"/></div>
+    </div>
+
+    <p class="sec">💧 Pluviômetro — Chuva</p>
+    <div class="r2">
+      <div class="field"><label>Tipo de coleta</label>
+        <select id="e-tipo" onchange="onTipoChange()">
+          <option value="periodica">Periódica — chuva: null</option>
+          <option value="chuva">Evento de chuva</option>
+        </select></div>
+      <div class="field"><label>Chuva (mm) — 0.25 por basculada</label>
+        <input id="e-chuva" type="number" step="0.001" placeholder="0.250" disabled/></div>
+    </div>
+
+    <p class="sec">💨 Anemômetro — Vento</p>
+    <div class="r3">
+      <div class="field"><label>Velocidade (km/h)</label>
+        <input id="e-vkmh" type="number" step="0.01" placeholder="12.50"/></div>
+      <div class="field"><label>Direção (graus)</label>
+        <input id="e-vgraus" type="number" step="1" placeholder="270"/></div>
+      <div class="field"><label>Cardinal</label>
+        <select id="e-vcardinal">
+          <option>N</option><option>NE</option><option>E</option><option>SE</option>
+          <option>S</option><option>SW</option><option selected>W</option><option>NW</option>
+        </select></div>
+    </div>
+
+    <p class="sec">🛰️ GPS — Localização</p>
+    <div class="r3">
+      <div class="field"><label>Latitude</label>
+        <input id="e-lat" type="number" step="0.0000001" placeholder="-15.7942"/></div>
+      <div class="field"><label>Longitude</label>
+        <input id="e-lon" type="number" step="0.0000001" placeholder="-47.8825"/></div>
+      <div class="field"><label>Altitude (m)</label>
+        <input id="e-alt" type="number" step="0.1" placeholder="1100.0"/></div>
+    </div>
+    <p class="hint" style="margin-bottom:.85rem">Deixe em branco para publicar null (sem fix GPS)</p>
+
+    <p class="sec">⚡ Tensão &amp; SD</p>
+    <div class="r2">
+      <div class="field"><label>Tensão externa (V)</label>
+        <input id="e-tensao" type="number" step="0.01" placeholder="12.35"/></div>
+      <div class="field"><label>Fila SD (arquivos)</label>
+        <input id="e-fila" type="number" step="1" value="0"/></div>
+    </div>
+
+    <div class="preview-label">Preview do JSON que será publicado</div>
+    <div id="json-preview">{}</div>
+
+    <button class="btn" id="btnEstacao" disabled onclick="publishEstacao()">Publicar no MQTT</button>
+  </div>
+
+  <!-- ====== LIVRE ====== -->
+  <div class="panel" id="panel-livre">
+    <div class="field"><label>Tópico</label>
+      <input id="l-topic" value="facilitagro/v1/Estacao_0001/dados"/></div>
+    <div class="field"><label>Mensagem</label>
+      <textarea id="l-msg" placeholder='{"chave": "valor"}'></textarea>
+      <p class="hint">Ctrl+Enter para enviar</p></div>
+    <div class="r2">
+      <div class="field"><label>QoS</label>
+        <select id="l-qos">
+          <option value="0">0 – At most once</option>
+          <option value="1" selected>1 – At least once</option>
+          <option value="2">2 – Exactly once</option>
+        </select></div>
+      <div class="field"><label>Reter</label>
+        <select id="l-retain">
+          <option value="false">Não</option>
+          <option value="true">Sim</option>
+        </select></div>
+    </div>
+    <button class="btn" id="btnLivre" disabled onclick="publishLivre()">Publicar no MQTT</button>
+  </div>
+
+  <!-- ====== CONFIG ====== -->
+  <div class="panel" id="panel-cfg">
+    <p class="sec" style="margin-top:0">URL do Proxy (Render)</p>
+    <div class="field">
+      <label>Endereço WebSocket do proxy</label>
+      <input id="cfgProxy" value="wss://facilitagro-mqtt-proxy.onrender.com"/>
+      <p class="hint">Após o deploy no Render, cole aqui a URL do seu serviço (wss://seu-app.onrender.com)</p>
+    </div>
+    <button class="btn" onclick="reconnect()">Reconectar</button>
+
+    <hr>
+    <p class="sec" style="margin-top:0">Como funciona</p>
+    <div style="font-size:.8rem;color:#5F5E5A;line-height:1.7;">
+      <p>Browser → <b>WebSocket (wss)</b> → Proxy no Render → <b>MQTT TLS (8883)</b> → Broker</p>
+      <br>
+      <p>O proxy recebe mensagens JSON com a estrutura:</p>
+      <pre style="background:#F1EFE8;border-radius:6px;padding:8px;margin-top:6px;font-size:.72rem;overflow-x:auto;">{ "type": "publish", "topic": "...", "payload": "...", "qos": 1 }
+{ "type": "subscribe", "topic": "..." }</pre>
+    </div>
+
+    <hr>
+    <p class="sec" style="margin-top:0">Tópicos do projeto</p>
+    <div class="field"><label>Publish (dados)</label>
+      <input readonly value="facilitagro/v1/{cfg_id}/dados"/></div>
+    <div class="field"><label>Subscribe (confirmação)</label>
+      <input readonly value="facilitagro/v1/{cfg_id}/resposta"/></div>
+  </div>
+
+  <hr>
+  <div class="log-hdr">
+    <span>Log de atividade</span>
+    <button onclick="clearLog()">Limpar</button>
+  </div>
+  <div id="log"></div>
+</div>
+
+<script>
+let ws = null;
+let connected = false;
+let reconnectTimer = null;
+
+const $ = id => document.getElementById(id);
+
+// ---- TABS ----
+function switchTab(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  $('panel-'+name).classList.add('active');
+  el.classList.add('active');
+}
+
+// ---- TIPO CHUVA ----
+function onTipoChange() {
+  const isRain = $('e-tipo').value === 'chuva';
+  $('e-chuva').disabled = !isRain;
+  if (!isRain) $('e-chuva').value = '';
+  buildPreview();
+}
+
+// ---- TÓPICO DINÂMICO ----
+function onIdChange() {
+  const id = $('e-id').value.trim() || '{id}';
+  $('e-topic').value = 'facilitagro/v1/' + id + '/dados';
+  $('l-topic').value = 'facilitagro/v1/' + id + '/dados';
+  buildPreview();
+}
+
+function num(id) { const v=$(id).value.trim(); return v===''?null:parseFloat(v); }
+function str(id) { return $(id).value.trim(); }
+
+function nowStr() {
+  const d = new Date();
+  return d.getFullYear()+'-'
+    +String(d.getMonth()+1).padStart(2,'0')+'-'
+    +String(d.getDate()).padStart(2,'0')+' '
+    +String(d.getHours()).padStart(2,'0')+':'
+    +String(d.getMinutes()).padStart(2,'0')+':'
+    +String(d.getSeconds()).padStart(2,'0')+'.'
+    +String(d.getMilliseconds()).padStart(3,'0');
+}
+
+function buildPreview() {
+  const isRain = $('e-tipo').value === 'chuva';
+  const reg = str('e-registro') || nowStr();
+  const equipamento = str('e-id') || 'Estacao_0001';
+  const filename = reg.replace(/[-:\s]/g, m => m===' '?'_':m===':'?'-':m) + '.txt';
+
+  const obj = {
+    registro:    reg,
+    equipamento: equipamento,
+    latitude:    num('e-lat'),
+    longitude:   num('e-lon'),
+    altitude:    num('e-alt'),
+    chuva:       isRain ? (num('e-chuva') ?? 0.25) : null,
+    temperatura: num('e-temp'),
+    umidade:     num('e-umid'),
+    vento_velocidade_kmh:   num('e-vkmh'),
+    vento_direcao_graus:    $('e-vgraus').value.trim()!=='' ? parseInt($('e-vgraus').value) : null,
+    vento_direcao_cardinal: str('e-vcardinal') || 'N',
+    tensao_externa_v:       num('e-tensao'),
+    filename:    filename,
+    fila_sd:     parseInt($('e-fila').value) || 0,
+  };
+  $('json-preview').textContent = JSON.stringify(obj, null, 2);
+  return obj;
+}
+
+['e-id','e-registro','e-temp','e-umid','e-chuva','e-tipo',
+ 'e-vkmh','e-vgraus','e-vcardinal','e-lat','e-lon','e-alt',
+ 'e-tensao','e-fila'].forEach(id => {
+  const el=$(id); if(!el) return;
+  el.addEventListener('input', buildPreview);
+  el.addEventListener('change', buildPreview);
+});
+onIdChange();
+
+// ---- LOG ----
+function ts() {
+  return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+function log(msg, type='') {
+  const el=$('log'), d=document.createElement('div');
+  d.className='ll '+type;
+  d.innerHTML=`<span class="ts">[${ts()}]</span>${msg}`;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+}
+function clearLog() { $('log').innerHTML=''; }
+function setStatus(state, text) {
+  $('statusBar').className='status '+state;
+  $('statusText').textContent=text;
+}
+function setBtns(on) {
+  $('btnEstacao').disabled=!on;
+  $('btnLivre').disabled=!on;
+}
+
+// ---- WEBSOCKET → PROXY ----
+function getProxyUrl() {
+  return $('cfgProxy').value.trim() || 'wss://facilitagro-mqtt-proxy.onrender.com';
+}
+
+function connect() {
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer=null; }
+  const url = getProxyUrl();
+  setStatus('connecting','Conectando ao proxy...');
+  log(`Conectando ao proxy: ${url}`, 'info');
+
+  try { ws = new WebSocket(url); } catch(e) {
+    log('URL inválida: '+e.message,'err');
+    setStatus('error','URL inválida');
+    return;
+  }
+
+  ws.onopen = () => {
+    log('✅ Proxy conectado! Aguardando confirmação do broker...','ok');
+    // subscribe no tópico de resposta
+    const id = str('e-id') || 'Estacao_0001';
+    send({ type:'subscribe', topic:`facilitagro/v1/${id}/resposta` });
+  };
+
+  ws.onmessage = (evt) => {
+    let msg;
+    try { msg = JSON.parse(evt.data); } catch(e) { return; }
+
+    switch(msg.type) {
+      case 'connack':
+        connected = true;
+        setStatus('connected','Conectado — broker MQTT via proxy');
+        log('✅ Broker MQTT conectado!','ok');
+        setBtns(true);
+        break;
+      case 'puback':
+        if(msg.success) log(`✅ Publicado em "${msg.topic}"`, 'ok');
+        else            log(`❌ Falha ao publicar: ${msg.error}`, 'err');
+        break;
+      case 'suback':
+        if(msg.success) log(`📥 Inscrito em "${msg.topic}"`, 'info');
+        break;
+      case 'publish':
+        log(`📨 Recebido em "${msg.topic}": ${msg.payload}`, 'info');
+        break;
+      case 'error':
+        log('❌ Erro do proxy: '+msg.message, 'err');
+        break;
+      case 'pong':
+        break;
+    }
+  };
+
+  ws.onclose = () => {
+    connected = false;
+    setBtns(false);
+    setStatus('connecting','Reconectando...');
+    log('⚠️ Proxy desconectado. Tentando reconectar em 5s...','info');
+    reconnectTimer = setTimeout(connect, 5000);
+  };
+
+  ws.onerror = () => {
+    setStatus('error','Erro de conexão com o proxy');
+    log('❌ Falha ao conectar ao proxy. Verifique a URL em Configurações.','err');
+  };
+}
+
+function reconnect() {
+  connected=false; setBtns(false);
+  if(ws) { ws.onclose=null; ws.onerror=null; try{ws.close();}catch(e){} ws=null; }
+  connect();
+}
+
+function send(obj) {
+  if(ws && ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify(obj));
+}
+
+// ---- PUBLISH ESTAÇÃO ----
+function publishEstacao() {
+  if(!connected){log('Sem conexão.','err');return;}
+  const topic=$('e-topic').value;
+  const payload=JSON.stringify(buildPreview());
+  send({type:'publish', topic, payload, qos:1, retain:false});
+}
+
+// ---- PUBLISH LIVRE ----
+function publishLivre() {
+  const topic=$('l-topic').value.trim();
+  const payload=$('l-msg').value;
+  const qos=parseInt($('l-qos').value);
+  const retain=$('l-retain').value==='true';
+  if(!topic){log('Informe um tópico.','err');return;}
+  if(!connected){log('Sem conexão.','err');return;}
+  send({type:'publish', topic, payload, qos, retain});
+}
+
+$('l-msg').addEventListener('keydown', e=>{
+  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) publishLivre();
+});
+
+connect();
+</script>
+</body>
+</html>

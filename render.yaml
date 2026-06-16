@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: facilitagro-mqtt-proxy
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MQTT_HOST
+        value: mqtt.facilitagro.com.br
+      - key: MQTT_PORT
+        value: "8883"
+      - key: MQTT_USER
+        value: ""
+      - key: MQTT_PASS
+        value: ""

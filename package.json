@@ -1,0 +1,13 @@
+{
+  "name": "facilitagro-mqtt-proxy",
+  "version": "1.0.0",
+  "description": "WebSocket → MQTT TLS proxy para FacilitAgro",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "mqtt": "^4.3.7",
+    "ws": "^8.16.0"
+  }
+}
