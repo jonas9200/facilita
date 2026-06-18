@@ -260,8 +260,7 @@ hr{border:none;border-top:1px solid #D3D1C7;margin:1.2rem 0;}
   <!-- ====== MONITOR ====== -->
   <div class="panel" id="panel-monitor">
     <div class="mon-bar">
-      <input id="mon-topic" value="facilitagro/v1/Estacao_0001/dados"
-        placeholder="tópico ou padrão com # e +"/>
+      <input id="mon-topic" placeholder="ex: facilitagro/v1/arduino-001/dados  ou  facilitagro/v1/#"/>
       <button class="mon-sub-btn" id="monSubBtn" onclick="monToggle()">▶ Assinar</button>
       <button class="mon-clear-btn" onclick="monClear()">🗑 Limpar</button>
     </div>
@@ -357,7 +356,6 @@ function onIdChange() {
   const id = $('e-id').value.trim() || '{id}';
   $('e-topic').value = 'facilitagro/v1/' + id + '/dados';
   $('l-topic').value = 'facilitagro/v1/' + id + '/dados';
-  if (!monSubscribed) $('mon-topic').value = 'facilitagro/v1/' + id + '/dados';
   buildPreview();
 }
 
