@@ -561,7 +561,21 @@ function connect() {
         else            log(`❌ Falha ao publicar: ${msg.error}`, 'err');
         break;
       case 'suback':
-        if(msg.success) log(`📥 Inscrito em "${msg.topic}"`, 'info');
+        if(msg.success) {
+          log(`📥 Inscrito em "${msg.topic}"`, 'info');
+          if (monSubscribed && msg.topic === monCurrentTopic) {
+            $('monStatusTxt').textContent = `✅ Broker confirmou: ${msg.topic} — aguardando mensagens...`;
+          }
+        } else {
+          log(`❌ Falha ao inscrever em "${msg.topic}": ${msg.error}`, 'err');
+          if (monSubscribed && msg.topic === monCurrentTopic) {
+            monSubscribed = false;
+            $('monSubBtn').textContent = '▶ Assinar';
+            $('monSubBtn').classList.remove('subbed');
+            $('monDot').classList.remove('on');
+            $('monStatusTxt').textContent = `❌ Broker recusou: ${msg.error}`;
+          }
+        }
         break;
       case 'publish':
         onIncomingPublish(msg.topic, msg.payload);
@@ -632,23 +646,23 @@ function monToggle() {
   if (!connected) { log('Sem conexão.', 'err'); return; }
   if (!monSubscribed) {
     monCurrentTopic = $('mon-topic').value.trim();
-    if (!monCurrentTopic) return;
+    if (!monCurrentTopic) { log('Informe um tópico no Monitor.', 'err'); return; }
+    log(`📺 Enviando subscribe → "${monCurrentTopic}"`, 'info');
     send({ type: 'subscribe', topic: monCurrentTopic });
     monSubscribed = true;
     $('monSubBtn').textContent = '■ Parar';
     $('monSubBtn').classList.add('subbed');
     $('monDot').classList.add('on');
-    $('monStatusTxt').textContent = `Assinado: ${monCurrentTopic}`;
+    $('monStatusTxt').textContent = `⏳ Aguardando confirmação do broker...`;
     $('monCount').style.display = 'inline';
-    log(`📺 Monitor: assinado em "${monCurrentTopic}"`, 'info');
   } else {
+    log(`📺 Monitor: cancelando "${monCurrentTopic}"`, 'info');
     send({ type: 'unsubscribe', topic: monCurrentTopic });
     monSubscribed = false;
     $('monSubBtn').textContent = '▶ Assinar';
     $('monSubBtn').classList.remove('subbed');
     $('monDot').classList.remove('on');
     $('monStatusTxt').textContent = 'Não assinado';
-    log(`📺 Monitor: cancelado "${monCurrentTopic}"`, 'info');
   }
 }
 
@@ -702,20 +716,18 @@ function monCopyCard(btn) {
 
 // Hook incoming publish messages into monitor
 function onIncomingPublish(topic, payload) {
-  // Always log
-  log(`📨 Recebido em "${topic}": ${payload.length > 60 ? payload.slice(0,60)+'…' : payload}`, 'info');
-  // If monitor is subscribed and topic matches, add card
-  if (monSubscribed && topicMatches(monCurrentTopic, topic)) {
+  const preview = payload.length > 60 ? payload.slice(0,60)+'…' : payload;
+  log(`📨 Recebido em "<b>${topic}</b>": ${preview}`, 'info');
+
+  // Always add to monitor if subscribed (broker already filtered by topic)
+  if (monSubscribed) {
     monAddMessage(topic, payload);
     // Flash tab if not active
     const monTab = document.querySelector('.tab[onclick*="monitor"]');
     if (monTab && !monTab.classList.contains('active')) {
       monTab.style.background = '#C8F0E2';
       monTab.style.color = '#085041';
-      setTimeout(() => {
-        monTab.style.background = '';
-        monTab.style.color = '';
-      }, 800);
+      setTimeout(() => { monTab.style.background = ''; monTab.style.color = ''; }, 800);
     }
   }
 }
