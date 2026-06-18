@@ -27,6 +27,9 @@ h1{font-size:1.4rem;font-weight:700;color:#C0DD97;letter-spacing:-.02em;}
 .status.error .dot{background:#E24B4A;}
 .status.connecting .dot{background:#EF9F27;animation:pulse 1s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.pub-counter{margin-left:auto;font-size:.7rem;color:#1D9E75;font-weight:700;
+  background:#C8F0E2;padding:2px 8px;border-radius:20px;display:none;}
+.status.connected .pub-counter{display:inline;}
 .tabs{display:flex;gap:3px;margin-bottom:1.3rem;background:#F1EFE8;border-radius:9px;padding:4px;}
 .tab{flex:1;padding:7px 4px;border:none;border-radius:7px;background:none;
   font-size:.76rem;font-weight:600;color:#888780;cursor:pointer;transition:all .2s;}
@@ -68,6 +71,66 @@ hr{border:none;border-top:1px solid #D3D1C7;margin:1.2rem 0;}
 .ll{margin-bottom:1px;}
 .ll.ok{color:#9FE1CB;} .ll.err{color:#F09595;} .ll.info{color:#FAC775;}
 .ts{color:#888780;margin-right:5px;}
+
+/* ---- LAST PUBLISH PANEL ---- */
+#last-pub-wrap{display:none;margin-bottom:1.2rem;}
+#last-pub-wrap.visible{display:block;}
+.last-pub-hdr{display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:6px;}
+.last-pub-hdr .lp-title{font-size:.67rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.07em;color:#5F5E5A;}
+.last-pub-hdr .lp-badge{font-size:.65rem;font-weight:700;padding:2px 8px;
+  border-radius:20px;background:#E1F5EE;color:#085041;border:1px solid #9FE1CB;}
+.lp-topic{font-size:.7rem;font-family:'Courier New',monospace;color:#888780;
+  margin-bottom:5px;word-break:break-all;}
+.lp-topic strong{color:#3B6D11;}
+#last-pub-json{background:#2C2C2A;border-radius:8px;padding:10px 12px;
+  font-family:'Courier New',monospace;font-size:.7rem;line-height:1.6;
+  max-height:200px;overflow-y:auto;white-space:pre;}
+.json-key{color:#FAC775;}
+.json-str{color:#C0DD97;}
+.json-num{color:#9FE1CB;}
+.json-null{color:#F09595;}
+.json-bool{color:#C3A6FF;}
+.lp-actions{display:flex;gap:6px;margin-top:7px;}
+.lp-actions button{flex:1;padding:5px 0;border:1.5px solid #D3D1C7;border-radius:7px;
+  background:#F1EFE8;color:#5F5E5A;font-size:.7rem;font-weight:600;cursor:pointer;transition:all .15s;}
+.lp-actions button:hover{background:#EAF3DE;border-color:#3B6D11;color:#3B6D11;}
+
+/* ---- MONITOR ---- */
+.mon-bar{display:flex;align-items:center;gap:8px;margin-bottom:1rem;}
+.mon-bar input{flex:1;font-size:.8rem;}
+.mon-bar button{white-space:nowrap;padding:8px 14px;border-radius:7px;border:none;
+  font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s;}
+.mon-sub-btn{background:#3B6D11;color:#fff;}
+.mon-sub-btn:hover{background:#639922;}
+.mon-sub-btn.subbed{background:#085041;color:#9FE1CB;}
+.mon-clear-btn{background:#F1EFE8;color:#5F5E5A;border:1.5px solid #D3D1C7 !important;
+  border:none;}
+.mon-clear-btn:hover{background:#FCEBEB;color:#791F1F;border-color:#F7C1C1 !important;}
+.mon-status{font-size:.7rem;color:#888780;margin-bottom:.8rem;display:flex;
+  align-items:center;gap:6px;}
+.mon-dot{width:7px;height:7px;border-radius:50%;background:#B4B2A9;flex-shrink:0;}
+.mon-dot.on{background:#1D9E75;box-shadow:0 0 0 3px #C8F0E2;}
+.mon-count{margin-left:auto;font-size:.68rem;font-weight:700;
+  background:#EAF3DE;color:#3B6D11;padding:1px 8px;border-radius:20px;}
+#mon-feed{display:flex;flex-direction:column;gap:8px;max-height:480px;overflow-y:auto;}
+.mon-empty{text-align:center;padding:2rem 1rem;color:#B4B2A9;font-size:.82rem;}
+.mon-card{border:1.5px solid #D3D1C7;border-radius:10px;overflow:hidden;
+  animation:slideIn .2s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.mon-card-hdr{display:flex;align-items:center;gap:8px;padding:7px 10px;
+  background:#F1EFE8;border-bottom:1px solid #D3D1C7;}
+.mon-card-hdr .mc-num{font-size:.65rem;font-weight:700;background:#3B6D11;color:#fff;
+  border-radius:20px;padding:1px 7px;}
+.mon-card-hdr .mc-topic{font-size:.68rem;font-family:'Courier New',monospace;
+  color:#3B6D11;flex:1;word-break:break-all;}
+.mon-card-hdr .mc-time{font-size:.65rem;color:#B4B2A9;}
+.mon-card-hdr .mc-copy{background:none;border:none;cursor:pointer;font-size:.75rem;
+  color:#B4B2A9;padding:0 2px;}
+.mon-card-hdr .mc-copy:hover{color:#3B6D11;}
+.mon-card-body{background:#2C2C2A;padding:9px 11px;font-family:'Courier New',monospace;
+  font-size:.69rem;line-height:1.6;max-height:180px;overflow-y:auto;white-space:pre;}
 </style>
 </head>
 <body>
@@ -85,12 +148,14 @@ hr{border:none;border-top:1px solid #D3D1C7;margin:1.2rem 0;}
   <div class="status connecting" id="statusBar">
     <div class="dot"></div>
     <span id="statusText">Conectando ao proxy...</span>
+    <span class="pub-counter" id="pubCounter">0 enviados</span>
   </div>
 
   <div class="tabs">
     <button class="tab active" onclick="switchTab('estacao',this)">📡 Estação</button>
     <button class="tab" onclick="switchTab('livre',this)">✏️ Livre</button>
-    <button class="tab" onclick="switchTab('cfg',this)">⚙️ Configurações</button>
+    <button class="tab" onclick="switchTab('monitor',this)">📺 Monitor</button>
+    <button class="tab" onclick="switchTab('cfg',this)">⚙️ Config</button>
   </div>
 
   <!-- ====== ESTAÇÃO ====== -->
@@ -192,6 +257,24 @@ hr{border:none;border-top:1px solid #D3D1C7;margin:1.2rem 0;}
     <button class="btn" id="btnLivre" disabled onclick="publishLivre()">Publicar no MQTT</button>
   </div>
 
+  <!-- ====== MONITOR ====== -->
+  <div class="panel" id="panel-monitor">
+    <div class="mon-bar">
+      <input id="mon-topic" value="facilitagro/v1/Estacao_0001/dados"
+        placeholder="tópico ou padrão com # e +"/>
+      <button class="mon-sub-btn" id="monSubBtn" onclick="monToggle()">▶ Assinar</button>
+      <button class="mon-clear-btn" onclick="monClear()">🗑 Limpar</button>
+    </div>
+    <div class="mon-status">
+      <div class="mon-dot" id="monDot"></div>
+      <span id="monStatusTxt">Não assinado</span>
+      <span class="mon-count" id="monCount" style="display:none">0 msgs</span>
+    </div>
+    <div id="mon-feed">
+      <div class="mon-empty" id="monEmpty">Assine um tópico para ver as mensagens aqui.</div>
+    </div>
+  </div>
+
   <!-- ====== CONFIG ====== -->
   <div class="panel" id="panel-cfg">
     <p class="sec" style="margin-top:0">URL do Proxy (Render)</p>
@@ -221,6 +304,22 @@ hr{border:none;border-top:1px solid #D3D1C7;margin:1.2rem 0;}
   </div>
 
   <hr>
+
+  <!-- ====== ÚLTIMA PUBLICAÇÃO ====== -->
+  <div id="last-pub-wrap">
+    <div class="last-pub-hdr">
+      <span class="lp-title">📤 Última publicação</span>
+      <span class="lp-badge" id="lp-time">—</span>
+    </div>
+    <div class="lp-topic" id="lp-topic"></div>
+    <div id="last-pub-json"></div>
+    <div class="lp-actions">
+      <button onclick="copyLastPayload()">📋 Copiar payload</button>
+      <button onclick="copyLastTopic()">📋 Copiar tópico</button>
+      <button onclick="copyLastFull()">📋 Copiar tudo (JSON)</button>
+    </div>
+  </div>
+
   <div class="log-hdr">
     <span>Log de atividade</span>
     <button onclick="clearLog()">Limpar</button>
@@ -232,6 +331,8 @@ hr{border:none;border-top:1px solid #D3D1C7;margin:1.2rem 0;}
 let ws = null;
 let connected = false;
 let reconnectTimer = null;
+let pubCount = 0;
+let lastPubData = null; // { topic, payload (string), obj (parsed or null) }
 
 const $ = id => document.getElementById(id);
 
@@ -256,6 +357,7 @@ function onIdChange() {
   const id = $('e-id').value.trim() || '{id}';
   $('e-topic').value = 'facilitagro/v1/' + id + '/dados';
   $('l-topic').value = 'facilitagro/v1/' + id + '/dados';
+  if (!monSubscribed) $('mon-topic').value = 'facilitagro/v1/' + id + '/dados';
   buildPreview();
 }
 
@@ -322,10 +424,102 @@ function clearLog() { $('log').innerHTML=''; }
 function setStatus(state, text) {
   $('statusBar').className='status '+state;
   $('statusText').textContent=text;
+  if(state==='connected') updatePubCounter();
 }
 function setBtns(on) {
   $('btnEstacao').disabled=!on;
   $('btnLivre').disabled=!on;
+}
+function updatePubCounter() {
+  $('pubCounter').textContent = pubCount === 1 ? '1 enviado' : `${pubCount} enviados`;
+}
+
+// ---- SYNTAX HIGHLIGHT ----
+function colorizeJson(obj) {
+  const raw = JSON.stringify(obj, null, 2);
+  return raw
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/("(?:\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*")\s*:/g,
+      '<span class="json-key">$1</span>:')
+    .replace(/:\s*("(?:\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*")/g,
+      ': <span class="json-str">$1</span>')
+    .replace(/:\s*(-?\d+\.?\d*([eE][+-]?\d+)?)/g,
+      ': <span class="json-num">$1</span>')
+    .replace(/:\s*(null)/g,
+      ': <span class="json-null">$1</span>')
+    .replace(/:\s*(true|false)/g,
+      ': <span class="json-bool">$1</span>');
+}
+
+// ---- LAST PUBLISH DISPLAY ----
+function showLastPublish(topic, payloadStr) {
+  let obj = null;
+  try { obj = JSON.parse(payloadStr); } catch(e) {}
+
+  const now = new Date().toLocaleTimeString('pt-BR',
+    {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+
+  lastPubData = { topic, payload: payloadStr, obj };
+
+  $('last-pub-wrap').classList.add('visible');
+  $('lp-time').textContent = now;
+  $('lp-topic').innerHTML = `Tópico: <strong>${escHtml(topic)}</strong>`;
+
+  const box = $('last-pub-json');
+  if (obj !== null) {
+    box.innerHTML = colorizeJson(obj);
+  } else {
+    box.style.color = '#C0DD97';
+    box.textContent = payloadStr;
+  }
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ---- COPY ACTIONS ----
+async function copyText(text, label) {
+  try {
+    await navigator.clipboard.writeText(text);
+    log(`📋 ${label} copiado para a área de transferência`, 'info');
+  } catch(e) {
+    log('❌ Não foi possível copiar: '+e.message, 'err');
+  }
+}
+function copyLastPayload() {
+  if (!lastPubData) return;
+  const text = lastPubData.obj
+    ? JSON.stringify(lastPubData.obj, null, 2)
+    : lastPubData.payload;
+  copyText(text, 'Payload');
+}
+function copyLastTopic() {
+  if (!lastPubData) return;
+  copyText(lastPubData.topic, 'Tópico');
+}
+function copyLastFull() {
+  if (!lastPubData) return;
+  const full = JSON.stringify({
+    topic: lastPubData.topic,
+    payload: lastPubData.obj ?? lastPubData.payload
+  }, null, 2);
+  copyText(full, 'Publicação completa');
+}
+
+// ---- LOG PUBLISH (detailed) ----
+function logPublish(topic, payloadStr) {
+  // One-liner in log
+  let preview = payloadStr.length > 80 ? payloadStr.slice(0,80)+'…' : payloadStr;
+  log(`📤 <span style="color:#FAC775">→ ${escHtml(topic)}</span>`, 'ok');
+  log(`&nbsp;&nbsp;&nbsp;<span style="color:#C0DD97;opacity:.8">${escHtml(preview)}</span>`, '');
+
+  // Update last publish panel
+  showLastPublish(topic, payloadStr);
+
+  // Counter
+  pubCount++;
+  updatePubCounter();
 }
 
 // ---- WEBSOCKET → PROXY ----
@@ -347,7 +541,6 @@ function connect() {
 
   ws.onopen = () => {
     log('✅ Proxy conectado! Aguardando confirmação do broker...','ok');
-    // subscribe no tópico de resposta
     const id = str('e-id') || 'Estacao_0001';
     send({ type:'subscribe', topic:`facilitagro/v1/${id}/resposta` });
   };
@@ -364,14 +557,14 @@ function connect() {
         setBtns(true);
         break;
       case 'puback':
-        if(msg.success) log(`✅ Publicado em "${msg.topic}"`, 'ok');
+        if(msg.success) log(`✅ Confirmação do broker: "${msg.topic}"`, 'ok');
         else            log(`❌ Falha ao publicar: ${msg.error}`, 'err');
         break;
       case 'suback':
         if(msg.success) log(`📥 Inscrito em "${msg.topic}"`, 'info');
         break;
       case 'publish':
-        log(`📨 Recebido em "${msg.topic}": ${msg.payload}`, 'info');
+        onIncomingPublish(msg.topic, msg.payload);
         break;
       case 'error':
         log('❌ Erro do proxy: '+msg.message, 'err');
@@ -410,6 +603,7 @@ function publishEstacao() {
   if(!connected){log('Sem conexão.','err');return;}
   const topic=$('e-topic').value;
   const payload=JSON.stringify(buildPreview());
+  logPublish(topic, payload);
   send({type:'publish', topic, payload, qos:1, retain:false});
 }
 
@@ -421,12 +615,121 @@ function publishLivre() {
   const retain=$('l-retain').value==='true';
   if(!topic){log('Informe um tópico.','err');return;}
   if(!connected){log('Sem conexão.','err');return;}
+  logPublish(topic, payload);
   send({type:'publish', topic, payload, qos, retain});
 }
 
 $('l-msg').addEventListener('keydown', e=>{
   if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) publishLivre();
 });
+
+// ---- MONITOR ----
+let monSubscribed = false;
+let monCurrentTopic = '';
+let monMsgCount = 0;
+
+function monToggle() {
+  if (!connected) { log('Sem conexão.', 'err'); return; }
+  if (!monSubscribed) {
+    monCurrentTopic = $('mon-topic').value.trim();
+    if (!monCurrentTopic) return;
+    send({ type: 'subscribe', topic: monCurrentTopic });
+    monSubscribed = true;
+    $('monSubBtn').textContent = '■ Parar';
+    $('monSubBtn').classList.add('subbed');
+    $('monDot').classList.add('on');
+    $('monStatusTxt').textContent = `Assinado: ${monCurrentTopic}`;
+    $('monCount').style.display = 'inline';
+    log(`📺 Monitor: assinado em "${monCurrentTopic}"`, 'info');
+  } else {
+    send({ type: 'unsubscribe', topic: monCurrentTopic });
+    monSubscribed = false;
+    $('monSubBtn').textContent = '▶ Assinar';
+    $('monSubBtn').classList.remove('subbed');
+    $('monDot').classList.remove('on');
+    $('monStatusTxt').textContent = 'Não assinado';
+    log(`📺 Monitor: cancelado "${monCurrentTopic}"`, 'info');
+  }
+}
+
+function monClear() {
+  monMsgCount = 0;
+  $('monCount').textContent = '0 msgs';
+  $('mon-feed').innerHTML = '<div class="mon-empty" id="monEmpty">Assine um tópico para ver as mensagens aqui.</div>';
+}
+
+function monAddMessage(topic, payloadStr) {
+  // Remove empty placeholder
+  const empty = $('monEmpty');
+  if (empty) empty.remove();
+
+  monMsgCount++;
+  $('monCount').textContent = monMsgCount === 1 ? '1 msg' : `${monMsgCount} msgs`;
+
+  const now = new Date().toLocaleTimeString('pt-BR',
+    {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+
+  let bodyHtml;
+  try {
+    const obj = JSON.parse(payloadStr);
+    bodyHtml = colorizeJson(obj);
+  } catch(e) {
+    bodyHtml = `<span style="color:#C0DD97">${escHtml(payloadStr)}</span>`;
+  }
+
+  const card = document.createElement('div');
+  card.className = 'mon-card';
+  card.innerHTML = `
+    <div class="mon-card-hdr">
+      <span class="mc-num">#${monMsgCount}</span>
+      <span class="mc-topic">${escHtml(topic)}</span>
+      <span class="mc-time">${now}</span>
+      <button class="mc-copy" title="Copiar payload" onclick="monCopyCard(this)">📋</button>
+    </div>
+    <div class="mon-card-body">${bodyHtml}</div>`;
+  card.querySelector('.mc-copy')._payload = payloadStr;
+
+  const feed = $('mon-feed');
+  feed.insertBefore(card, feed.firstChild); // newest on top
+
+  // Cap at 50 cards
+  while (feed.children.length > 50) feed.removeChild(feed.lastChild);
+}
+
+function monCopyCard(btn) {
+  copyText(btn._payload, 'Payload');
+}
+
+// Hook incoming publish messages into monitor
+function onIncomingPublish(topic, payload) {
+  // Always log
+  log(`📨 Recebido em "${topic}": ${payload.length > 60 ? payload.slice(0,60)+'…' : payload}`, 'info');
+  // If monitor is subscribed and topic matches, add card
+  if (monSubscribed && topicMatches(monCurrentTopic, topic)) {
+    monAddMessage(topic, payload);
+    // Flash tab if not active
+    const monTab = document.querySelector('.tab[onclick*="monitor"]');
+    if (monTab && !monTab.classList.contains('active')) {
+      monTab.style.background = '#C8F0E2';
+      monTab.style.color = '#085041';
+      setTimeout(() => {
+        monTab.style.background = '';
+        monTab.style.color = '';
+      }, 800);
+    }
+  }
+}
+
+// MQTT wildcard matching
+function topicMatches(pattern, topic) {
+  const pp = pattern.split('/');
+  const tp = topic.split('/');
+  for (let i = 0; i < pp.length; i++) {
+    if (pp[i] === '#') return true;
+    if (pp[i] !== '+' && pp[i] !== tp[i]) return false;
+  }
+  return pp.length === tp.length;
+}
 
 connect();
 </script>
